@@ -3,8 +3,9 @@
 # User inputs everything
 # User inputs the number of processes and time quantum (for Round Robin)
 # User inputs the burst time, arrival time and priority for each process
-
-import customtkinter as ctk
+#------------------------------------------------------------------------------------------------------------
+# LIBRARIES
+# import customtkinter as ctk
 # import tkinter as tk
 # from tkinter import ttk
 
@@ -24,24 +25,127 @@ def get_time_quantum():
     return time_quantum
 
 # Function to get the burst time, arrival time and priority for each process
-# format: burst time, arrival time, priority
+# format: process name, burst time, arrival time, priority
 def get_process_info(num_processes):
     process_info = []
     for i in range(num_processes):
-        burst_time = int(input(f"Enter the burst time for process {i}: "))
-        arrival_time = int(input(f"Enter the arrival time for process {i}: "))
-        priority = int(input(f"Enter the priority for process {i}: "))
-        process_info.append((burst_time, arrival_time, priority))
+        burst_time = int(input(f"Enter the burst time for P{i}: "))
+        arrival_time = int(input(f"Enter the arrival time for P{i}: "))
+        priority = int(input(f"Enter the priority for P{i}: "))
+        print ("\n")
+        process_info.append((f"P{i}", burst_time, arrival_time, priority))
     return process_info
 
-# Main function
-numProcess = get_number_of_processes()
-timeQuantum = get_time_quantum()
-processInfo = get_process_info(numProcess)
+#------------------------------------------------------------------------------------------------------------
+# CPU Scheduling Algorithms & Related Functions
 
-print("Number of processes: ", numProcess)
-print("Time quantum: ", timeQuantum)
-print("Process info: ", processInfo)
+# swap function
+def swap(a, b):
+    temp = a
+    a = b
+    b = temp
+    return a,b
+
+# Bubble sort burst time
+def bubble_sort_burst(tup_list):
+    n = len(tup_list)
+    for i in range(n - 1):
+        for j in range (n - i - 1):
+            if tup_list[j][1] > tup_list[j+1][1]:
+                tup_list[j], tup_list[j + 1] = swap (tup_list[j], tup_list[j + 1])
+    return tup_list
+
+# Bubble sort arrival time
+def bubble_sort_arrival(tup_list):
+    n = len(tup_list)
+    for i in range(n - 1):
+        for j in range (n - i - 1):
+            if tup_list[j][2] > tup_list[j+1][2]:
+                tup_list[j], tup_list[j + 1] = swap (tup_list[j], tup_list[j + 1])
+    return tup_list
+
+# SJF
+# Non-preemptive
+def sjf_algorithm(process_info):
+    timestamp = 0
+    ready_queue = []
+    gantt_chart = []
+    bubble_sort_arrival(process_info)
+    
+    # Add processes into ready queue (based on arrival time) and add process into 'gantt chart' from ready queue (based on burst time)
+    while len(process_info) != 0 or len(ready_queue) != 0:
+        while len(process_info) != 0 and process_info[0][2] <= timestamp:
+            ready_queue.append(process_info.pop(0))
+        
+        if len(ready_queue) != 0:
+            bubble_sort_burst(ready_queue)
+            current_process = ready_queue.pop(0)
+            gantt_chart.append(current_process)
+            timestamp += current_process[1]
+        else:
+            timestamp += 1
+
+    print("Processes in order after SJF: ", [p[0] for p in gantt_chart])
+
+# Test SJF
+def test_sjf_algorithm():
+    # Simulate user input
+    def mock_input(prompt):
+        inputs = {
+            "Enter the number of processes: ": "4",
+            "Enter the burst time for P0: ": "6",
+            "Enter the arrival time for P0: ": "0",
+            "Enter the priority for P0: ": "1",
+            "Enter the burst time for P1: ": "8",
+            "Enter the arrival time for P1: ": "0",
+            "Enter the priority for P1: ": "2",
+            "Enter the burst time for P2: ": "7",
+            "Enter the arrival time for P2: ": "0",
+            "Enter the priority for P2: ": "3",
+            "Enter the burst time for P3: ": "3",
+            "Enter the arrival time for P3: ": "0",
+            "Enter the priority for P3: ": "4",
+        }
+        return inputs[prompt]
+
+    # Mock the input function
+    original_input = __builtins__.input
+    __builtins__.input = mock_input
+
+    try:
+        # Get the number of processes
+        num_processes = get_number_of_processes()
+        # Get the process information
+        process_info = get_process_info(num_processes)
+        # Run the SJF algorithm
+        sjf_algorithm(process_info)
+    finally:
+        # Restore the original input function
+        __builtins__.input = original_input
+
+# Run the test case
+# test_sjf_algorithm()
+
+
+# SRT
+    # Preemptive
+
+#------------------------------------------------------------------------------------------------------------
+# Main function
+def main():
+    numProcess = get_number_of_processes()
+    timeQuantum = get_time_quantum()
+    processInfo = get_process_info(numProcess)
+
+    print("Number of processes: ", numProcess)
+    print("Time quantum: ", timeQuantum)
+    print("Process info: ", processInfo)
+
+    sjf_algorithm(processInfo)
+
+main()
+
+
 
 
 #------------------------------------------------------------------------------------------------------------
