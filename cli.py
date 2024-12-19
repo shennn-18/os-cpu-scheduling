@@ -32,8 +32,8 @@ def get_process_info(num_processes):
         burst_time = int(input(f"Enter the burst time for P{i}: "))
         arrival_time = int(input(f"Enter the arrival time for P{i}: "))
         priority = int(input(f"Enter the priority for P{i}: "))
-        print ("\n")
         process_info.append((f"P{i}", burst_time, arrival_time, priority))
+    print()
     return process_info
 
 #------------------------------------------------------------------------------------------------------------
@@ -87,7 +87,7 @@ def sjf_algorithm(process_info):
 
     print("Processes in order after SJF: ", [p[0] for p in gantt_chart])
 
-# Test SJF
+# Test Cases for SJF
 def test_sjf_algorithm():
     # Simulate user input
     def mock_input(prompt):
@@ -123,8 +123,125 @@ def test_sjf_algorithm():
         # Restore the original input function
         __builtins__.input = original_input
 
-# Run the test case
+def test_sjf_algorithm_different_arrival():
+    def mock_input(prompt):
+        inputs = {
+            "Enter the number of processes: ": "4",
+            "Enter the burst time for P0: ": "6",
+            "Enter the arrival time for P0: ": "2",
+            "Enter the priority for P0: ": "1",
+            "Enter the burst time for P1: ": "8",
+            "Enter the arrival time for P1: ": "0",
+            "Enter the priority for P1: ": "2",
+            "Enter the burst time for P2: ": "7",
+            "Enter the arrival time for P2: ": "1",
+            "Enter the priority for P2: ": "3",
+            "Enter the burst time for P3: ": "3",
+            "Enter the arrival time for P3: ": "3",
+            "Enter the priority for P3: ": "4",
+        }
+        return inputs[prompt]
+
+    original_input = __builtins__.input
+    __builtins__.input = mock_input
+
+    try:
+        num_processes = get_number_of_processes()
+        process_info = get_process_info(num_processes)
+        sjf_algorithm(process_info)
+    finally:
+        __builtins__.input = original_input
+
+def test_sjf_algorithm_same_arrival_burst():
+    def mock_input(prompt):
+        inputs = {
+            "Enter the number of processes: ": "4",
+            "Enter the burst time for P0: ": "5",
+            "Enter the arrival time for P0: ": "0",
+            "Enter the priority for P0: ": "1",
+            "Enter the burst time for P1: ": "5",
+            "Enter the arrival time for P1: ": "0",
+            "Enter the priority for P1: ": "2",
+            "Enter the burst time for P2: ": "5",
+            "Enter the arrival time for P2: ": "0",
+            "Enter the priority for P2: ": "3",
+            "Enter the burst time for P3: ": "5",
+            "Enter the arrival time for P3: ": "0",
+            "Enter the priority for P3: ": "4",
+        }
+        return inputs[prompt]
+
+    original_input = __builtins__.input
+    __builtins__.input = mock_input
+
+    try:
+        num_processes = get_number_of_processes()
+        process_info = get_process_info(num_processes)
+        sjf_algorithm(process_info)
+    finally:
+        __builtins__.input = original_input
+
+def test_sjf_algorithm_diff_burst_same_arrival():
+    def mock_input(prompt):
+        inputs = {
+            "Enter the number of processes: ": "4",
+            "Enter the burst time for P0: ": "10",
+            "Enter the arrival time for P0: ": "0",
+            "Enter the priority for P0: ": "1",
+            "Enter the burst time for P1: ": "1",
+            "Enter the arrival time for P1: ": "0",
+            "Enter the priority for P1: ": "2",
+            "Enter the burst time for P2: ": "2",
+            "Enter the arrival time for P2: ": "0",
+            "Enter the priority for P2: ": "3",
+            "Enter the burst time for P3: ": "3",
+            "Enter the arrival time for P3: ": "0",
+            "Enter the priority for P3: ": "4",
+        }
+        return inputs[prompt]
+
+    original_input = __builtins__.input
+    __builtins__.input = mock_input
+
+    try:
+        num_processes = get_number_of_processes()
+        process_info = get_process_info(num_processes)
+        sjf_algorithm(process_info)
+    finally:
+        __builtins__.input = original_input
+
+def test_sjf_algorithm_late_arrival():
+    def mock_input(prompt):
+        inputs = {
+            "Enter the number of processes: ": "3",
+            "Enter the burst time for P0: ": "4",
+            "Enter the arrival time for P0: ": "5",
+            "Enter the priority for P0: ": "1",
+            "Enter the burst time for P1: ": "3",
+            "Enter the arrival time for P1: ": "6",
+            "Enter the priority for P1: ": "2",
+            "Enter the burst time for P2: ": "2",
+            "Enter the arrival time for P2: ": "7",
+            "Enter the priority for P2: ": "3",
+        }
+        return inputs[prompt]
+
+    original_input = __builtins__.input
+    __builtins__.input = mock_input
+
+    try:
+        num_processes = get_number_of_processes()
+        process_info = get_process_info(num_processes)
+        sjf_algorithm(process_info)
+    finally:
+        __builtins__.input = original_input
+
+# Run the test cases
 # test_sjf_algorithm()
+test_sjf_algorithm_different_arrival()
+test_sjf_algorithm_same_arrival_burst()
+test_sjf_algorithm_diff_burst_same_arrival()
+test_sjf_algorithm_late_arrival()
 
 
 # SRT
@@ -143,7 +260,7 @@ def main():
 
     sjf_algorithm(processInfo)
 
-main()
+# main()
 
 
 
