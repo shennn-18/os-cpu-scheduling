@@ -238,14 +238,181 @@ def test_sjf_algorithm_late_arrival():
 
 # Run the test cases
 # test_sjf_algorithm()
-test_sjf_algorithm_different_arrival()
-test_sjf_algorithm_same_arrival_burst()
-test_sjf_algorithm_diff_burst_same_arrival()
-test_sjf_algorithm_late_arrival()
+# test_sjf_algorithm_different_arrival()
+# test_sjf_algorithm_same_arrival_burst()
+# test_sjf_algorithm_diff_burst_same_arrival()
+# test_sjf_algorithm_late_arrival()
 
 
 # SRT
     # Preemptive
+    # arrange processes based on arrival time
+    # Timestamp increment by 1 instead of based on executing process' time
+    # As new process arrives, ready_queue will keep arranging based on burst time, causing the potential 'interrupt'
+    # When burst time of one process is 0, they stop executing and is removed from ready_queue
+    
+def srt_algorithm(process_info):
+    timestamp = 0
+    ready_queue = []
+    gantt_chart = []
+    bubble_sort_arrival(process_info)
+    previous_process = None
+
+    # Add processes into ready queue (based on arrival time) 
+    # and add process into 'gantt chart' from ready queue (based on burst time)
+    while len(process_info) != 0 or len(ready_queue) != 0: # when process_info or ready_queue is not empty
+        while len(process_info) != 0 and process_info[0][2] <= timestamp: # Add to ready queue when process arrive
+            ready_queue.append(process_info.pop(0))
+        
+        if len(ready_queue) != 0: # When ready queue ada process, start processing
+            bubble_sort_burst(ready_queue) # sort ready queue based on burst time   
+            current_process = ready_queue[0] # current process is chosen, womp womp
+            temp_list = list(current_process)
+            
+            if temp_list[1] == 0:
+                # print(temp_list[0], " die alrdy at time ", timestamp)
+                ready_queue.pop(0)
+                # gantt_chart.append(temp_list) # added to gantt chart
+            else:
+                if previous_process is None or temp_list[0] != previous_process[0]:
+                    print("Context switch to", temp_list[0], "at time", timestamp)
+                    gantt_chart.append(temp_list)
+                # print(temp_list[0], "executing at time", timestamp)
+                temp_list[1] -= 1
+                ready_queue[0] = tuple(temp_list)
+                previous_process = temp_list  # Update the previous process
+            timestamp += 1   
+        else: # if no process timestamp will just go brr
+            timestamp += 1
+
+    print("Processes in order after SJF: ", [p[0] for p in gantt_chart])
+
+# Test cases for SRT
+def test_srt_algorithm_context_switch():
+    def mock_input(prompt):
+        inputs = {
+            "Enter the number of processes: ": "4",
+            "Enter the burst time for P0: ": "8",
+            "Enter the arrival time for P0: ": "0",
+            "Enter the priority for P0: ": "1",
+            "Enter the burst time for P1: ": "4",
+            "Enter the arrival time for P1: ": "1",
+            "Enter the priority for P1: ": "2",
+            "Enter the burst time for P2: ": "9",
+            "Enter the arrival time for P2: ": "2",
+            "Enter the priority for P2: ": "3",
+            "Enter the burst time for P3: ": "5",
+            "Enter the arrival time for P3: ": "3",
+            "Enter the priority for P3: ": "4",
+        }
+        return inputs[prompt]
+
+    original_input = __builtins__.input
+    __builtins__.input = mock_input
+
+    try:
+        num_processes = get_number_of_processes()
+        process_info = get_process_info(num_processes)
+        srt_algorithm(process_info)
+    finally:
+        __builtins__.input = original_input
+
+def test_srt_algorithm_late_arrival():
+    def mock_input(prompt):
+        inputs = {
+            "Enter the number of processes: ": "3",
+            "Enter the burst time for P0: ": "4",
+            "Enter the arrival time for P0: ": "5",
+            "Enter the priority for P0: ": "1",
+            "Enter the burst time for P1: ": "3",
+            "Enter the arrival time for P1: ": "6",
+            "Enter the priority for P1: ": "2",
+            "Enter the burst time for P2: ": "2",
+            "Enter the arrival time for P2: ": "7",
+            "Enter the priority for P2: ": "3",
+        }
+        return inputs[prompt]
+
+    original_input = __builtins__.input
+    __builtins__.input = mock_input
+
+    try:
+        num_processes = get_number_of_processes()
+        process_info = get_process_info(num_processes)
+        srt_algorithm(process_info)
+    finally:
+        __builtins__.input = original_input
+
+def test_srt_algorithm_interrupts():
+    def mock_input(prompt):
+        inputs = {
+            "Enter the number of processes: ": "4",
+            "Enter the burst time for P0: ": "10",
+            "Enter the arrival time for P0: ": "0",
+            "Enter the priority for P0: ": "1",
+            "Enter the burst time for P1: ": "4",
+            "Enter the arrival time for P1: ": "1",
+            "Enter the priority for P1: ": "2",
+            "Enter the burst time for P2: ": "2",
+            "Enter the arrival time for P2: ": "2",
+            "Enter the priority for P2: ": "3",
+            "Enter the burst time for P3: ": "1",
+            "Enter the arrival time for P3: ": "3",
+            "Enter the priority for P3: ": "4",
+        }
+        return inputs[prompt]
+
+    original_input = __builtins__.input
+    __builtins__.input = mock_input
+
+    try:
+        num_processes = get_number_of_processes()
+        process_info = get_process_info(num_processes)
+        srt_algorithm(process_info)
+    finally:
+        __builtins__.input = original_input
+
+def test_srt_algorithm_pre_assigned():
+    def mock_input(prompt):
+        inputs = {
+            "Enter the number of processes: ": "6",
+            "Enter the burst time for P0: ": "6",
+            "Enter the arrival time for P0: ": "0",
+            "Enter the priority for P0: ": "3",
+            "Enter the burst time for P1: ": "4",
+            "Enter the arrival time for P1: ": "1",
+            "Enter the priority for P1: ": "3",
+            "Enter the burst time for P2: ": "6",
+            "Enter the arrival time for P2: ": "5",
+            "Enter the priority for P2: ": "1",
+            "Enter the burst time for P3: ": "6",
+            "Enter the arrival time for P3: ": "6",
+            "Enter the priority for P3: ": "1",
+            "Enter the burst time for P4: ": "6",
+            "Enter the arrival time for P4: ": "7",
+            "Enter the priority for P4: ": "5",
+            "Enter the burst time for P5: ": "6",
+            "Enter the arrival time for P5: ": "8",
+            "Enter the priority for P5: ": "6",
+        }
+        return inputs[prompt]
+
+    original_input = __builtins__.input
+    __builtins__.input = mock_input
+
+    try:
+        num_processes = get_number_of_processes()
+        process_info = get_process_info(num_processes)
+        srt_algorithm(process_info)
+    finally:
+        __builtins__.input = original_input
+
+
+
+# test_srt_algorithm_context_switch()
+# test_srt_algorithm_late_arrival()
+# test_srt_algorithm_interrupts()
+test_srt_algorithm_pre_assigned()
 
 #------------------------------------------------------------------------------------------------------------
 # Main function
