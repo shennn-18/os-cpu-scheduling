@@ -236,12 +236,50 @@ def test_sjf_algorithm_late_arrival():
     finally:
         __builtins__.input = original_input
 
+def test_sjf_algorithm_pre_assigned():
+    def mock_input(prompt):
+        inputs = {
+            "Enter the number of processes: ": "6",
+            "Enter the burst time for P0: ": "6",
+            "Enter the arrival time for P0: ": "0",
+            "Enter the priority for P0: ": "3",
+            "Enter the burst time for P1: ": "4",
+            "Enter the arrival time for P1: ": "1",
+            "Enter the priority for P1: ": "3",
+            "Enter the burst time for P2: ": "6",
+            "Enter the arrival time for P2: ": "5",
+            "Enter the priority for P2: ": "1",
+            "Enter the burst time for P3: ": "6",
+            "Enter the arrival time for P3: ": "6",
+            "Enter the priority for P3: ": "1",
+            "Enter the burst time for P4: ": "6",
+            "Enter the arrival time for P4: ": "7",
+            "Enter the priority for P4: ": "5",
+            "Enter the burst time for P5: ": "6",
+            "Enter the arrival time for P5: ": "8",
+            "Enter the priority for P5: ": "6",
+        }
+        return inputs[prompt]
+
+    original_input = __builtins__.input
+    __builtins__.input = mock_input
+
+    try:
+        num_processes = get_number_of_processes()
+        process_info = get_process_info(num_processes)
+        sjf_algorithm(process_info)
+    finally:
+        __builtins__.input = original_input
+
+
+
 # Run the test cases
 # test_sjf_algorithm()
 # test_sjf_algorithm_different_arrival()
 # test_sjf_algorithm_same_arrival_burst()
 # test_sjf_algorithm_diff_burst_same_arrival()
 # test_sjf_algorithm_late_arrival()
+test_sjf_algorithm_pre_assigned()
 
 
 # SRT
@@ -275,7 +313,7 @@ def srt_algorithm(process_info):
                 # gantt_chart.append(temp_list) # added to gantt chart
             else:
                 if previous_process is None or temp_list[0] != previous_process[0]:
-                    print("Context switch to", temp_list[0], "at time", timestamp)
+                    # print("Context switch to", temp_list[0], "at time", timestamp)
                     gantt_chart.append(temp_list)
                 # print(temp_list[0], "executing at time", timestamp)
                 temp_list[1] -= 1
@@ -285,7 +323,7 @@ def srt_algorithm(process_info):
         else: # if no process timestamp will just go brr
             timestamp += 1
 
-    print("Processes in order after SJF: ", [p[0] for p in gantt_chart])
+    print("Processes in order after SRT: ", [p[0] for p in gantt_chart])
 
 # Test cases for SRT
 def test_srt_algorithm_context_switch():
