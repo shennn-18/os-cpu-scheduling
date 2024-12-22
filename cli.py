@@ -1,13 +1,10 @@
-#CPU Scheduling downgraded version to CLI - as MVP
-#Thoughts:
+# CPU Scheduling downgraded version to CLI - as MVP
+# Thoughts:
 # User inputs everything
 # User inputs the number of processes and time quantum (for Round Robin)
 # User inputs the burst time, arrival time and priority for each process
 #------------------------------------------------------------------------------------------------------------
 # LIBRARIES
-# import customtkinter as ctk
-# import tkinter as tk
-# from tkinter import ttk
 
 # Function to get the number of processes
 # min number of processes = 3
@@ -36,294 +33,155 @@ def get_process_info(num_processes):
     print()
     return process_info
 
-#------------------------------------------------------------------------------------------------------------
-# CPU Scheduling Algorithms & Related Functions
-
-# swap function
-def swap(a, b):
-    temp = a
-    a = b
-    b = temp
-    return a,b
-
-# Bubble sort burst time
-def bubble_sort_burst(tup_list):
-    n = len(tup_list)
+def bubble_sort_arrival(process_list):
+    """
+    Sort the list of processes by their 'arrival' key in ascending order.
+    """
+    n = len(process_list)
     for i in range(n - 1):
-        for j in range (n - i - 1):
-            if tup_list[j][1] > tup_list[j+1][1]:
-                tup_list[j], tup_list[j + 1] = swap (tup_list[j], tup_list[j + 1])
-    return tup_list
+        for j in range(n - i - 1):
+            if process_list[j]['arrival'] > process_list[j + 1]['arrival']:
+                process_list[j], process_list[j + 1] = process_list[j + 1], process_list[j]
+    return process_list
 
-# Bubble sort arrival time
-def bubble_sort_arrival(tup_list):
-    n = len(tup_list)
+def bubble_sort_burst(process_list):
+    """
+    Sort the list of processes by their 'burst' key in ascending order.
+    """
+    n = len(process_list)
     for i in range(n - 1):
-        for j in range (n - i - 1):
-            if tup_list[j][2] > tup_list[j+1][2]:
-                tup_list[j], tup_list[j + 1] = swap (tup_list[j], tup_list[j + 1])
-    return tup_list
+        for j in range(n - i - 1):
+            if process_list[j]['burst'] > process_list[j + 1]['burst']:
+                process_list[j], process_list[j + 1] = process_list[j + 1], process_list[j]
+    return process_list
 
-# SJF
-# Non-preemptive
-def sjf_algorithm(process_info):
+def srt_algorithm(process_info):
+    """
+    Preemptive SRT. Store the extra times in each process dict as well.
+    """
     timestamp = 0
     ready_queue = []
     gantt_chart = []
-    bubble_sort_arrival(process_info)
-    
-    # Add processes into ready queue (based on arrival time) and add process into 'gantt chart' from ready queue (based on burst time)
-    while len(process_info) != 0 or len(ready_queue) != 0:
-        while len(process_info) != 0 and process_info[0][2] <= timestamp:
-            ready_queue.append(process_info.pop(0))
-        
+
+    # Convert each process tuple into a dictionary,
+    # storing both the original burst and a modifiable burst field
+    processes = []
+    for p in process_info:
+        processes.append({
+            'name': p[0],
+            'original_burst': p[1],  # keep original burst for waiting time calculations
+            'burst': p[1],          # this will be decremented during execution
+            'arrival': p[2],
+            'priority': p[3],
+            'completion': 0,
+            'turnaround': 0,
+            'waiting': 0
+        })
+
+    bubble_sort_arrival(processes)
+    previous_process = None
+
+    # Run until all processes are handled
+    while len(processes) or len(ready_queue):
+        # Move newly arrived processes to the ready queue
+        while processes and processes[0]['arrival'] <= timestamp:
+            ready_queue.append(processes.pop(0))
+
+        if ready_queue:
+            bubble_sort_burst(ready_queue)        # sort by 'burst' (remaining burst)
+            current_process = ready_queue[0]
+            if current_process['burst'] == 0:
+                # Process is finished
+                current_process['completion'] = timestamp
+                current_process['turnaround'] = timestamp - current_process['arrival']
+                # Use 'original_burst' for correct waiting time
+                current_process['waiting'] = current_process['turnaround'] - current_process['original_burst']
+                ready_queue.pop(0)
+            else:
+                # If we just switched processes, record in Gantt chart
+                if not previous_process or current_process['name'] != previous_process['name']:
+                    gantt_chart.append(current_process)
+                current_process['burst'] -= 1  # decrement the remaining burst
+                previous_process = current_process
+            timestamp += 1
+        else:
+            # No processes are ready; time advances
+            if processes:
+                timestamp = processes[0]['arrival']
+            else:
+                timestamp += 1
+
+    # Update the original process_info with the calculated times
+    for process in gantt_chart:
+        for p in process_info:
+            if p[0] == process['name']:
+                p += (process['completion'], process['turnaround'], process['waiting'])
+
+    print("Processes in order after SRT:", [p['name'] for p in gantt_chart])
+    print("Original burst times:       ", [p['original_burst'] for p in gantt_chart])
+    print("Remaining burst times:      ", [p['burst'] for p in gantt_chart])
+    print("Arrival times:              ", [p['arrival'] for p in gantt_chart])
+    print("Completion times:           ", [p['completion'] for p in gantt_chart])
+    print("Turnaround times:           ", [p['turnaround'] for p in gantt_chart])
+    print("Waiting times:              ", [p['waiting'] for p in gantt_chart])
+    return gantt_chart
+
+def sjf_algorithm(process_info):
+    """
+    Non-preemptive SJF that uses dictionaries for each process.
+    Stores completion, turnaround, and waiting times in the same dictionary.
+    """
+    timestamp = 0
+    ready_queue = []
+    gantt_chart = []
+
+    # Convert each process tuple into a dictionary
+    processes = []
+    for p in process_info:
+        processes.append({
+            'name': p[0],
+            'burst': p[1],
+            'arrival': p[2],
+            'priority': p[3],
+            'completion': 0,
+            'turnaround': 0,
+            'waiting': 0
+        })
+
+    bubble_sort_arrival(processes)
+
+    while len(processes) != 0 or len(ready_queue) != 0:
+        while len(processes) != 0 and processes[0]['arrival'] <= timestamp:
+            ready_queue.append(processes.pop(0))
+
         if len(ready_queue) != 0:
             bubble_sort_burst(ready_queue)
             current_process = ready_queue.pop(0)
             gantt_chart.append(current_process)
-            timestamp += current_process[1]
+
+            start_time = timestamp
+            timestamp += current_process['burst']
+            finish_time = timestamp
+
+            current_process['completion'] = finish_time
+            current_process['turnaround'] = finish_time - current_process['arrival']
+            current_process['waiting'] = current_process['turnaround'] - current_process['burst']
         else:
             timestamp += 1
 
-    print("Processes in order after SJF: ", [p[0] for p in gantt_chart])
+    # Update the original process_info with the calculated times
+    for process in gantt_chart:
+        for p in process_info:
+            if p[0] == process['name']:
+                p += (process['completion'], process['turnaround'], process['waiting'])
 
-# Test Cases for SJF
-def test_sjf_algorithm():
-    # Simulate user input
-    def mock_input(prompt):
-        inputs = {
-            "Enter the number of processes: ": "4",
-            "Enter the burst time for P0: ": "6",
-            "Enter the arrival time for P0: ": "0",
-            "Enter the priority for P0: ": "1",
-            "Enter the burst time for P1: ": "8",
-            "Enter the arrival time for P1: ": "0",
-            "Enter the priority for P1: ": "2",
-            "Enter the burst time for P2: ": "7",
-            "Enter the arrival time for P2: ": "0",
-            "Enter the priority for P2: ": "3",
-            "Enter the burst time for P3: ": "3",
-            "Enter the arrival time for P3: ": "0",
-            "Enter the priority for P3: ": "4",
-        }
-        return inputs[prompt]
-
-    # Mock the input function
-    original_input = __builtins__.input
-    __builtins__.input = mock_input
-
-    try:
-        # Get the number of processes
-        num_processes = get_number_of_processes()
-        # Get the process information
-        process_info = get_process_info(num_processes)
-        # Run the SJF algorithm
-        sjf_algorithm(process_info)
-    finally:
-        # Restore the original input function
-        __builtins__.input = original_input
-
-def test_sjf_algorithm_different_arrival():
-    def mock_input(prompt):
-        inputs = {
-            "Enter the number of processes: ": "4",
-            "Enter the burst time for P0: ": "6",
-            "Enter the arrival time for P0: ": "2",
-            "Enter the priority for P0: ": "1",
-            "Enter the burst time for P1: ": "8",
-            "Enter the arrival time for P1: ": "0",
-            "Enter the priority for P1: ": "2",
-            "Enter the burst time for P2: ": "7",
-            "Enter the arrival time for P2: ": "1",
-            "Enter the priority for P2: ": "3",
-            "Enter the burst time for P3: ": "3",
-            "Enter the arrival time for P3: ": "3",
-            "Enter the priority for P3: ": "4",
-        }
-        return inputs[prompt]
-
-    original_input = __builtins__.input
-    __builtins__.input = mock_input
-
-    try:
-        num_processes = get_number_of_processes()
-        process_info = get_process_info(num_processes)
-        sjf_algorithm(process_info)
-    finally:
-        __builtins__.input = original_input
-
-def test_sjf_algorithm_same_arrival_burst():
-    def mock_input(prompt):
-        inputs = {
-            "Enter the number of processes: ": "4",
-            "Enter the burst time for P0: ": "5",
-            "Enter the arrival time for P0: ": "0",
-            "Enter the priority for P0: ": "1",
-            "Enter the burst time for P1: ": "5",
-            "Enter the arrival time for P1: ": "0",
-            "Enter the priority for P1: ": "2",
-            "Enter the burst time for P2: ": "5",
-            "Enter the arrival time for P2: ": "0",
-            "Enter the priority for P2: ": "3",
-            "Enter the burst time for P3: ": "5",
-            "Enter the arrival time for P3: ": "0",
-            "Enter the priority for P3: ": "4",
-        }
-        return inputs[prompt]
-
-    original_input = __builtins__.input
-    __builtins__.input = mock_input
-
-    try:
-        num_processes = get_number_of_processes()
-        process_info = get_process_info(num_processes)
-        sjf_algorithm(process_info)
-    finally:
-        __builtins__.input = original_input
-
-def test_sjf_algorithm_diff_burst_same_arrival():
-    def mock_input(prompt):
-        inputs = {
-            "Enter the number of processes: ": "4",
-            "Enter the burst time for P0: ": "10",
-            "Enter the arrival time for P0: ": "0",
-            "Enter the priority for P0: ": "1",
-            "Enter the burst time for P1: ": "1",
-            "Enter the arrival time for P1: ": "0",
-            "Enter the priority for P1: ": "2",
-            "Enter the burst time for P2: ": "2",
-            "Enter the arrival time for P2: ": "0",
-            "Enter the priority for P2: ": "3",
-            "Enter the burst time for P3: ": "3",
-            "Enter the arrival time for P3: ": "0",
-            "Enter the priority for P3: ": "4",
-        }
-        return inputs[prompt]
-
-    original_input = __builtins__.input
-    __builtins__.input = mock_input
-
-    try:
-        num_processes = get_number_of_processes()
-        process_info = get_process_info(num_processes)
-        sjf_algorithm(process_info)
-    finally:
-        __builtins__.input = original_input
-
-def test_sjf_algorithm_late_arrival():
-    def mock_input(prompt):
-        inputs = {
-            "Enter the number of processes: ": "3",
-            "Enter the burst time for P0: ": "4",
-            "Enter the arrival time for P0: ": "5",
-            "Enter the priority for P0: ": "1",
-            "Enter the burst time for P1: ": "3",
-            "Enter the arrival time for P1: ": "6",
-            "Enter the priority for P1: ": "2",
-            "Enter the burst time for P2: ": "2",
-            "Enter the arrival time for P2: ": "7",
-            "Enter the priority for P2: ": "3",
-        }
-        return inputs[prompt]
-
-    original_input = __builtins__.input
-    __builtins__.input = mock_input
-
-    try:
-        num_processes = get_number_of_processes()
-        process_info = get_process_info(num_processes)
-        sjf_algorithm(process_info)
-    finally:
-        __builtins__.input = original_input
-
-def test_sjf_algorithm_pre_assigned():
-    def mock_input(prompt):
-        inputs = {
-            "Enter the number of processes: ": "6",
-            "Enter the burst time for P0: ": "6",
-            "Enter the arrival time for P0: ": "0",
-            "Enter the priority for P0: ": "3",
-            "Enter the burst time for P1: ": "4",
-            "Enter the arrival time for P1: ": "1",
-            "Enter the priority for P1: ": "3",
-            "Enter the burst time for P2: ": "6",
-            "Enter the arrival time for P2: ": "5",
-            "Enter the priority for P2: ": "1",
-            "Enter the burst time for P3: ": "6",
-            "Enter the arrival time for P3: ": "6",
-            "Enter the priority for P3: ": "1",
-            "Enter the burst time for P4: ": "6",
-            "Enter the arrival time for P4: ": "7",
-            "Enter the priority for P4: ": "5",
-            "Enter the burst time for P5: ": "6",
-            "Enter the arrival time for P5: ": "8",
-            "Enter the priority for P5: ": "6",
-        }
-        return inputs[prompt]
-
-    original_input = __builtins__.input
-    __builtins__.input = mock_input
-
-    try:
-        num_processes = get_number_of_processes()
-        process_info = get_process_info(num_processes)
-        sjf_algorithm(process_info)
-    finally:
-        __builtins__.input = original_input
-
-
-
-# Run the test cases
-# test_sjf_algorithm()
-# test_sjf_algorithm_different_arrival()
-# test_sjf_algorithm_same_arrival_burst()
-# test_sjf_algorithm_diff_burst_same_arrival()
-# test_sjf_algorithm_late_arrival()
-test_sjf_algorithm_pre_assigned()
-
-
-# SRT
-    # Preemptive
-    # arrange processes based on arrival time
-    # Timestamp increment by 1 instead of based on executing process' time
-    # As new process arrives, ready_queue will keep arranging based on burst time, causing the potential 'interrupt'
-    # When burst time of one process is 0, they stop executing and is removed from ready_queue
-    
-def srt_algorithm(process_info):
-    timestamp = 0
-    ready_queue = []
-    gantt_chart = []
-    bubble_sort_arrival(process_info)
-    previous_process = None
-
-    # Add processes into ready queue (based on arrival time) 
-    # and add process into 'gantt chart' from ready queue (based on burst time)
-    while len(process_info) != 0 or len(ready_queue) != 0: # when process_info or ready_queue is not empty
-        while len(process_info) != 0 and process_info[0][2] <= timestamp: # Add to ready queue when process arrive
-            ready_queue.append(process_info.pop(0))
-        
-        if len(ready_queue) != 0: # When ready queue ada process, start processing
-            bubble_sort_burst(ready_queue) # sort ready queue based on burst time   
-            current_process = ready_queue[0] # current process is chosen, womp womp
-            temp_list = list(current_process)
-            
-            if temp_list[1] == 0:
-                # print(temp_list[0], " die alrdy at time ", timestamp)
-                ready_queue.pop(0)
-                # gantt_chart.append(temp_list) # added to gantt chart
-            else:
-                if previous_process is None or temp_list[0] != previous_process[0]:
-                    # print("Context switch to", temp_list[0], "at time", timestamp)
-                    gantt_chart.append(temp_list)
-                # print(temp_list[0], "executing at time", timestamp)
-                temp_list[1] -= 1
-                ready_queue[0] = tuple(temp_list)
-                previous_process = temp_list  # Update the previous process
-            timestamp += 1   
-        else: # if no process timestamp will just go brr
-            timestamp += 1
-
-    print("Processes in order after SRT: ", [p[0] for p in gantt_chart])
+    print("Processes in order after SJF:", [p['name'] for p in gantt_chart])
+    print("Burst times:                ", [p['burst'] for p in gantt_chart])
+    print("Arrival times:              ", [p['arrival'] for p in gantt_chart])
+    print("Completion times:           ", [p['completion'] for p in gantt_chart])
+    print("Turnaround times:           ", [p['turnaround'] for p in gantt_chart])
+    print("Waiting times:              ", [p['waiting'] for p in gantt_chart])
+    return gantt_chart
 
 # Test cases for SRT
 def test_srt_algorithm_context_switch():
@@ -355,46 +213,23 @@ def test_srt_algorithm_context_switch():
     finally:
         __builtins__.input = original_input
 
-def test_srt_algorithm_late_arrival():
-    def mock_input(prompt):
-        inputs = {
-            "Enter the number of processes: ": "3",
-            "Enter the burst time for P0: ": "4",
-            "Enter the arrival time for P0: ": "5",
-            "Enter the priority for P0: ": "1",
-            "Enter the burst time for P1: ": "3",
-            "Enter the arrival time for P1: ": "6",
-            "Enter the priority for P1: ": "2",
-            "Enter the burst time for P2: ": "2",
-            "Enter the arrival time for P2: ": "7",
-            "Enter the priority for P2: ": "3",
-        }
-        return inputs[prompt]
+test_srt_algorithm_context_switch()
 
-    original_input = __builtins__.input
-    __builtins__.input = mock_input
-
-    try:
-        num_processes = get_number_of_processes()
-        process_info = get_process_info(num_processes)
-        srt_algorithm(process_info)
-    finally:
-        __builtins__.input = original_input
-
-def test_srt_algorithm_interrupts():
+# Test cases for SJF
+def test_sjf_algorithm_context_switch():
     def mock_input(prompt):
         inputs = {
             "Enter the number of processes: ": "4",
-            "Enter the burst time for P0: ": "10",
+            "Enter the burst time for P0: ": "8",
             "Enter the arrival time for P0: ": "0",
             "Enter the priority for P0: ": "1",
             "Enter the burst time for P1: ": "4",
             "Enter the arrival time for P1: ": "1",
             "Enter the priority for P1: ": "2",
-            "Enter the burst time for P2: ": "2",
+            "Enter the burst time for P2: ": "9",
             "Enter the arrival time for P2: ": "2",
             "Enter the priority for P2: ": "3",
-            "Enter the burst time for P3: ": "1",
+            "Enter the burst time for P3: ": "5",
             "Enter the arrival time for P3: ": "3",
             "Enter the priority for P3: ": "4",
         }
@@ -406,51 +241,9 @@ def test_srt_algorithm_interrupts():
     try:
         num_processes = get_number_of_processes()
         process_info = get_process_info(num_processes)
-        srt_algorithm(process_info)
+        sjf_algorithm(process_info)
     finally:
         __builtins__.input = original_input
-
-def test_srt_algorithm_pre_assigned():
-    def mock_input(prompt):
-        inputs = {
-            "Enter the number of processes: ": "6",
-            "Enter the burst time for P0: ": "6",
-            "Enter the arrival time for P0: ": "0",
-            "Enter the priority for P0: ": "3",
-            "Enter the burst time for P1: ": "4",
-            "Enter the arrival time for P1: ": "1",
-            "Enter the priority for P1: ": "3",
-            "Enter the burst time for P2: ": "6",
-            "Enter the arrival time for P2: ": "5",
-            "Enter the priority for P2: ": "1",
-            "Enter the burst time for P3: ": "6",
-            "Enter the arrival time for P3: ": "6",
-            "Enter the priority for P3: ": "1",
-            "Enter the burst time for P4: ": "6",
-            "Enter the arrival time for P4: ": "7",
-            "Enter the priority for P4: ": "5",
-            "Enter the burst time for P5: ": "6",
-            "Enter the arrival time for P5: ": "8",
-            "Enter the priority for P5: ": "6",
-        }
-        return inputs[prompt]
-
-    original_input = __builtins__.input
-    __builtins__.input = mock_input
-
-    try:
-        num_processes = get_number_of_processes()
-        process_info = get_process_info(num_processes)
-        srt_algorithm(process_info)
-    finally:
-        __builtins__.input = original_input
-
-
-
-# test_srt_algorithm_context_switch()
-# test_srt_algorithm_late_arrival()
-# test_srt_algorithm_interrupts()
-test_srt_algorithm_pre_assigned()
 
 #------------------------------------------------------------------------------------------------------------
 # Main function
@@ -463,58 +256,6 @@ def main():
     print("Time quantum: ", timeQuantum)
     print("Process info: ", processInfo)
 
-    sjf_algorithm(processInfo)
 
-# main()
-
-
-
-
-#------------------------------------------------------------------------------------------------------------
-
-
-# After getting the process info, we can now display the process info in customtkinter
-
-# Display the process info in customtkinter
-# Initialize the main window
-# ctk.set_appearance_mode("dark")
-# ctk.set_default_color_theme("green")
-
-# app = ctk.CTk()
-# app.title("CPU Scheduling Simulator")
-# app.geometry("800x500")
-
-# header_label = ctk.CTkLabel(app, text="CPU Scheduling Simulator")
-# header_label.grid(row=0, column=0, pady=20)
-
-# # # Add a frame for the process info
-# frame = ctk.CTkFrame(app)
-# frame.grid(row=1, column=0, pady=10)
-
-# Add a label for the process info
-# label = ctk.CTkLabel(frame, text="Process Info")
-# label.pack()
-
-# Add a table view for the process info
-# create a grid layout for the table view
-
-# headers = ["Process", "Arrival Time", "Burst Time", "Priority"]
-# rows = [["P0"], ["P1"], ["P2"]]
-
-# for i, header in enumerate(headers):
-#     ctk.CTkLabel(frame, text=header).grid(row=0, column=i)
-
-# for i, row in enumerate(rows):
-#     for j, cell in enumerate(row):
-#         ctk.CTkLabel(frame, text=cell).grid(row=i+1, column=j)
-
-#         # Add the process info to the table view
-#         for i, process in enumerate(processInfo):
-#             burst_time, arrival_time, priority = process
-#             ctk.CTkLabel(frame, text=f"{i+1}").grid(row=i+1, column=0)
-#             ctk.CTkLabel(frame, text=f"{burst_time}").grid(row=i+1, column=1)
-#             ctk.CTkLabel(frame, text=f"{arrival_time}").grid(row=i+1, column=2)
-#             ctk.CTkLabel(frame, text=f"{priority}").grid(row=i+1, column=3)
-
-
-# app.mainloop()
+# if __name__ == "__main__":
+#     main()
