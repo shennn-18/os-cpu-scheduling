@@ -103,7 +103,7 @@ def srt_algorithm(process_info):
                     gantt_chart.append(current_process)
                 current_process['burst'] -= 1  # decrement the remaining burst
                 previous_process = current_process
-            timestamp += 1
+                timestamp += 1
         else:
             # No processes are ready; time advances
             if processes:
