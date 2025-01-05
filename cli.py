@@ -4,7 +4,7 @@
 # User inputs the number of processes and time quantum (for Round Robin)
 # User inputs the burst time, arrival time and priority for each process
 #------------------------------------------------------------------------------------------------------------
-# LIBRARIES
+#FUNCTIONS - MISC
 
 # Function to get the number of processes
 # min number of processes = 3
@@ -79,6 +79,8 @@ def avr_wt_cal(wt_list):
     avr_wt = round(avr_wt, 2)
     print ("Average of waiting time: ", avr_wt)
 
+#------------------------------------------------------------------------------------------------------------
+# FUNCTIONS FOR CPU SCHEDULING ALGORITHMS
 
 # SJF Algorithm
 def sjf_algorithm(process_info):
@@ -148,7 +150,9 @@ def sjf_algorithm(process_info):
     avr_tat_cal(turnaround_times)
     avr_wt_cal(waiting_times)
 
-    return gantt_chart
+    return process_info, gantt_chart
+
+import builtins
 
 # Test cases for SJF
 def test_sjf_algorithm_context_switch():
@@ -170,17 +174,17 @@ def test_sjf_algorithm_context_switch():
         }
         return inputs[prompt]
 
-    original_input = __builtins__.input
-    __builtins__.input = mock_input
+    original_input = builtins.input
+    builtins.input = mock_input
 
     try:
         num_processes = get_number_of_processes()
         process_info = get_process_info(num_processes)
         sjf_algorithm(process_info)
     finally:
-        __builtins__.input = original_input
+        builtins.input = original_input
 
-test_sjf_algorithm_context_switch()
+# test_sjf_algorithm_context_switch()
 
 #------------------------------------------------------------------------------------------------------------
 
@@ -265,7 +269,7 @@ def srt_algorithm(process_info):
     waiting_times = [p[6] for p in process_info]
     avr_tat_cal(turnaround_times)
     avr_wt_cal(waiting_times)
-    return gantt_chart
+    return process_info, gantt_chart
 
 # Test cases for SRT
 def test_srt_algorithm_context_switch():
@@ -287,17 +291,17 @@ def test_srt_algorithm_context_switch():
         }
         return inputs[prompt]
 
-    original_input = __builtins__.input
-    __builtins__.input = mock_input
+    original_input = builtins.input
+    builtins.input = mock_input
 
     try:
         num_processes = get_number_of_processes()
         process_info = get_process_info(num_processes)
         srt_algorithm(process_info)
     finally:
-        __builtins__.input = original_input
+        builtins.input = original_input
 
-test_srt_algorithm_context_switch()
+# test_srt_algorithm_context_switch()
 
 
 #------------------------------------------------------------------------------------------------------------
@@ -310,6 +314,9 @@ def main():
     print("Number of processes: ", numProcess)
     print("Time quantum: ", timeQuantum)
     print("Process info: ", processInfo)
+
+    sjf_algorithm(processInfo)
+    srt_algorithm(processInfo)
 
 
 # if __name__ == "__main__":
