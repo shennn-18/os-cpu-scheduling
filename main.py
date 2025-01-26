@@ -44,17 +44,13 @@ class CPUSchedulingSimulator:
 
         num_process_label = Label(entries_frame, text="Number of Processes:   ")
         self.num_process_entry = Entry(entries_frame, width=25, borderwidth=5)
-        time_quantum_label = Label(entries_frame, text="Time Quantum:   ")
-        self.time_quantum_entry = Entry(entries_frame, width=25, borderwidth=5)
         submit_button = Button(entries_frame, text="Submit", command=self.submit_button_fun)
         run_algorithm_button = Button(entries_frame, text="Run Algorithm", command=self.run_algorithm_fun)
 
         num_process_label.grid(row=0, column=0)
         self.num_process_entry.grid(row=0, column=1)
-        time_quantum_label.grid(row=1, column=0)
-        self.time_quantum_entry.grid(row=1, column=1)
-        submit_button.grid(row=2, column=0)
-        run_algorithm_button.grid(row=3, column=0)
+        submit_button.grid(row=1, column=0)
+        run_algorithm_button.grid(row=2, column=0)
 
         process_info_frame = LabelFrame(scrollable_frame, text="Process Information")
         process_info_frame.grid(row=2, column=0, padx=50, pady=50)
@@ -68,29 +64,22 @@ class CPUSchedulingSimulator:
 
     def submit_button_fun(self):
         """Handle submit button click - opens process info entry window"""
-        # Validate that both fields are filled
-        if not self.num_process_entry.get() or not self.time_quantum_entry.get():
-            messagebox.showerror("Error", "Please fill in both Number of Processes and Time Quantum")
+        # Validate that the field is filled
+        if not self.num_process_entry.get():
+            messagebox.showerror("Error", "Please enter Number of Processes")
             return
 
         try:
             num_processes = int(self.num_process_entry.get())
-            time_quantum = int(self.time_quantum_entry.get())
             
             # Validate number of processes
             if num_processes < 3 or num_processes > 10:
                 messagebox.showerror("Error", "Number of processes must be between 3 and 10")
                 return
             
-            # Validate time quantum is positive
-            if time_quantum <= 0:
-                messagebox.showerror("Error", "Time quantum must be greater than 0")
-                return
-
-            self.time_quantum = time_quantum  # Store time quantum for later use
             self.create_process_info_window(num_processes)
         except ValueError:
-            messagebox.showerror("Error", "Please enter valid numbers")
+            messagebox.showerror("Error", "Please enter a valid number")
             return
 
     def create_process_info_window(self, num_process):
@@ -202,16 +191,19 @@ class CPUSchedulingSimulator:
         sjf_process_info, sjf_gantt_chart = self.sjf_algorithm([(p['name'], p['burst'], p['arrival'], p['priority']) for p in self.process_info_data])
         srt_process_info, srt_gantt_chart = self.srt_algorithm([(p['name'], p['burst'], p['arrival'], p['priority']) for p in self.process_info_data])
         pr_process_info, pr_gantt_chart = self.non_preemptive_priority_algorithm([(p['name'], p['burst'], p['arrival'], p['priority']) for p in self.process_info_data])
+        rr_process_info, rr_gantt_chart = self.round_robin_algorithm([(p['name'], p['burst'], p['arrival'], p['priority']) for p in self.process_info_data])
 
         # Display results for all algorithms
         self.display_results(sjf_tree, sjf_process_info)
         self.display_results(srt_tree, srt_process_info)
         self.display_results(pr_tree, pr_process_info)
+        self.display_results(rr_tree, rr_process_info)
 
         # Display calculations and Gantt charts
         self.display_calculation_results(sjf_tab, sjf_process_info, sjf_gantt_chart, "SJF")
         self.display_calculation_results(srt_tab, srt_process_info, srt_gantt_chart, "SRT")
         self.display_calculation_results(pr_tab, pr_process_info, pr_gantt_chart, "Priority")
+        self.display_calculation_results(rr_tab, rr_process_info, rr_gantt_chart, "Round Robin")
 
     def create_treeview(self, parent):
         """
@@ -454,11 +446,87 @@ class CPUSchedulingSimulator:
 
         return process_info, execution_segments
 
-    # TODO: Add more scheduling algorithms here
+    def round_robin_algorithm(self, process_info):
+        """
+        Round Robin implementation with fixed time quantum = 3
+        """
+        TIME_QUANTUM = 3
+        timestamp = 0
+        ready_queue = []
+        execution_segments = []
+        completed_processes = []
+        
+        # Initialize processes
+        processes = []
+        for p in process_info:
+            processes.append({
+                'name': p[0],
+                'original_burst': p[1],
+                'burst': p[1],
+                'arrival': p[2],
+                'priority': p[3],
+                'completion': 0,
+                'turnaround': 0,
+                'waiting': 0
+            })
 
-    # def round_robin_algorithm(self, process_info, time_quantum):
-    #     """Round Robin implementation"""
-    #     pass
+        # Sort by arrival time initially
+        processes.sort(key=lambda x: x['arrival'])
+
+        while processes or ready_queue:
+            # Check for newly arrived processes
+            while processes and processes[0]['arrival'] <= timestamp:
+                ready_queue.append(processes.pop(0))
+
+            if not ready_queue:
+                # If no process is ready, jump to next process arrival
+                if processes:
+                    timestamp = processes[0]['arrival']
+                    continue
+                else:
+                    break
+
+            # Get next process from ready queue
+            current_process = ready_queue.pop(0)
+            
+            # Calculate execution time for this quantum
+            exec_time = min(TIME_QUANTUM, current_process['burst'])
+            execution_end = timestamp + exec_time
+            
+            # Add execution segment
+            execution_segments.append((timestamp, execution_end, current_process['name']))
+            
+            # Update process burst time
+            current_process['burst'] -= exec_time
+            timestamp = execution_end
+
+            # Check for processes that arrived during execution
+            while processes and processes[0]['arrival'] <= timestamp:
+                ready_queue.append(processes.pop(0))
+
+            # Handle current process
+            if current_process['burst'] > 0:
+                # Process still has remaining time, add it back to ready queue
+                ready_queue.append(current_process)
+            else:
+                # Process is complete
+                current_process['completion'] = timestamp
+                current_process['turnaround'] = timestamp - current_process['arrival']
+                current_process['waiting'] = current_process['turnaround'] - current_process['original_burst']
+                completed_processes.append(current_process)
+
+        # Prepare result in the same format as other algorithms
+        result_info = []
+        for p in process_info:
+            completed = next((proc for proc in completed_processes if proc['name'] == p[0]), None)
+            if completed:
+                result_info.append(p + (
+                    completed['completion'],
+                    completed['turnaround'],
+                    completed['waiting']
+                ))
+
+        return result_info, execution_segments
 
 #-------------------------------------------------------------------------------------
 # MAIN ENTRY POINT
