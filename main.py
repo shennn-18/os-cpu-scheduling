@@ -1,9 +1,19 @@
+#-------------------------------------------------------------------------------------
+# IMPORTS
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
 
+#-------------------------------------------------------------------------------------
+# MAIN APPLICATION CLASS
 class CPUSchedulingSimulator:
+    """
+    Main application class that handles the CPU scheduling simulation GUI.
+    Contains all UI elements and algorithm implementations.
+    """
+    
     def __init__(self, root):
+        """Initialize the main window and setup the UI"""
         self.root = root
         self.root.title("CPU Scheduling Algorithm Simulator - OS")
         self.root.geometry("1000x600")
@@ -11,7 +21,10 @@ class CPUSchedulingSimulator:
 
         self.setup_ui()
 
+    #-------------------------------------------------------------------------------------
+    # UI SETUP AND MANAGEMENT
     def setup_ui(self):
+        """Setup all UI components including main canvas, scrollbar, and entry fields"""
         main_canvas = Canvas(self.root)
         scrollbar = Scrollbar(self.root, orient="vertical", command=main_canvas.yview)
         scrollable_frame = Frame(main_canvas)
@@ -54,12 +67,43 @@ class CPUSchedulingSimulator:
         self.process_info_tree.pack(padx=10, pady=10, fill='both', expand=True)
 
     def submit_button_fun(self):
-        self.create_process_info_window(self.num_process_entry.get())
+        """Handle submit button click - opens process info entry window"""
+        # Validate that both fields are filled
+        if not self.num_process_entry.get() or not self.time_quantum_entry.get():
+            messagebox.showerror("Error", "Please fill in both Number of Processes and Time Quantum")
+            return
+
+        try:
+            num_processes = int(self.num_process_entry.get())
+            time_quantum = int(self.time_quantum_entry.get())
+            
+            # Validate number of processes
+            if num_processes < 3 or num_processes > 10:
+                messagebox.showerror("Error", "Number of processes must be between 3 and 10")
+                return
+            
+            # Validate time quantum is positive
+            if time_quantum <= 0:
+                messagebox.showerror("Error", "Time quantum must be greater than 0")
+                return
+
+            self.time_quantum = time_quantum  # Store time quantum for later use
+            self.create_process_info_window(num_processes)
+        except ValueError:
+            messagebox.showerror("Error", "Please enter valid numbers")
+            return
 
     def create_process_info_window(self, num_process):
+        """Create popup window for entering process information"""
         self.process_info_window = Toplevel()
         self.process_info_window.title("Process Info Entries")
         self.process_info_window.geometry("500x400")
+
+        # Validate number of processes again as a safeguard
+        if not (3 <= num_process <= 10):
+            messagebox.showerror("Error", "Number of processes must be between 3 and 10")
+            self.process_info_window.destroy()
+            return
 
         num_process = int(num_process)
         count = 0
@@ -94,6 +138,7 @@ class CPUSchedulingSimulator:
         submit_button.pack()
 
     def submit_entries_fun(self):
+        """Handle process information submission and validation"""
         self.process_info_data = []
 
         entries_frame = self.process_info_window.winfo_children()[0]
@@ -126,7 +171,13 @@ class CPUSchedulingSimulator:
 
         self.process_info_window.destroy()
 
+    #-------------------------------------------------------------------------------------
+    # ALGORITHM EXECUTION AND DISPLAY
     def run_algorithm_fun(self):
+        """
+        Create new window for algorithm results and execute all scheduling algorithms
+        This is where you can add new algorithm tabs
+        """
         algorithm_window = Toplevel(self.root)
         algorithm_window.title("CPU Scheduling Algorithm Results")
         algorithm_window.geometry("1200x800")
@@ -158,6 +209,10 @@ class CPUSchedulingSimulator:
         self.display_calculation_results(srt_tab, srt_process_info, srt_gantt_chart, "SRT")
 
     def create_treeview(self, parent):
+        """
+        Create a treeview to display process information
+        Modify this to add new columns for additional process attributes
+        """
         tree = ttk.Treeview(parent, columns=("Name", "Burst Time", "Arrival Time", "Priority", "Completion Time", "Turnaround Time", "Waiting Time"), show='headings')
         tree.heading("Name", text="Name")
         tree.heading("Burst Time", text="Burst Time")
@@ -170,12 +225,17 @@ class CPUSchedulingSimulator:
         return tree
 
     def display_results(self, tree, results):
+        """Display algorithm results in the treeview"""
         for row in tree.get_children():
             tree.delete(row)
         for process in results:
             tree.insert("", "end", values=(process[0], process[1], process[2], process[3], process[4], process[5], process[6]))
 
     def display_calculation_results(self, tab, process_info, gantt_chart, algorithm_name):
+        """
+        Display calculation results and Gantt chart
+        Extend this to show additional metrics
+        """
         tat_sum = sum([p[5] for p in process_info])
         wt_sum = sum([p[6] for p in process_info])
         tat_avg = round(tat_sum / len(process_info), 2)
@@ -192,6 +252,10 @@ class CPUSchedulingSimulator:
         self.draw_gantt_chart(canvas, gantt_chart, max_time)
 
     def draw_gantt_chart(self, canvas, gantt_chart, max_time):
+        """
+        Draw the Gantt chart visualization
+        Modify this to change the chart appearance or add new features
+        """
         canvas_width = 800
         scale = canvas_width / max_time
         x_offset = (1000 - canvas_width) / 2
@@ -210,7 +274,13 @@ class CPUSchedulingSimulator:
             canvas.create_text(start_time * scale + x_offset, text_y, text=str(start_time), anchor="n")
             canvas.create_text(end_time * scale + x_offset, text_y, text=str(end_time), anchor="n")
 
+    #-------------------------------------------------------------------------------------
+    # SCHEDULING ALGORITHMS
     def sjf_algorithm(self, process_info):
+        """
+        Shortest Job First (Non-preemptive) implementation
+        Returns: tuple(process_info, execution_segments)
+        """
         timestamp = 0
         ready_queue = []
         gantt_chart = []
@@ -259,6 +329,10 @@ class CPUSchedulingSimulator:
         return process_info, execution_segments
 
     def srt_algorithm(self, process_info):
+        """
+        Shortest Remaining Time (Preemptive) implementation
+        Returns: tuple(process_info, execution_segments)
+        """
         timestamp = 0
         ready_queue = []
         gantt_chart = []
@@ -321,6 +395,17 @@ class CPUSchedulingSimulator:
 
         return process_info, execution_segments
 
+    # TODO: Add more scheduling algorithms here
+    # def non_preemptive_priority_algorithm(self, process_info):
+    #     """Priority scheduling implementation"""
+    #     pass
+
+    # def round_robin_algorithm(self, process_info, time_quantum):
+    #     """Round Robin implementation"""
+    #     pass
+
+#-------------------------------------------------------------------------------------
+# MAIN ENTRY POINT
 if __name__ == "__main__":
     root = Tk()
     app = CPUSchedulingSimulator(root)
