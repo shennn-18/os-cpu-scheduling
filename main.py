@@ -176,11 +176,10 @@ class CPUSchedulingSimulator:
     def run_algorithm_fun(self):
         """
         Create new window for algorithm results and execute all scheduling algorithms
-        This is where you can add new algorithm tabs
         """
         algorithm_window = Toplevel(self.root)
         algorithm_window.title("CPU Scheduling Algorithm Results")
-        algorithm_window.geometry("1200x800")
+        algorithm_window.geometry("1600x800")
 
         tabControl = ttk.Notebook(algorithm_window)
         sjf_tab = Frame(tabControl)
@@ -199,14 +198,20 @@ class CPUSchedulingSimulator:
         pr_tree = self.create_treeview(pr_tab)
         rr_tree = self.create_treeview(rr_tab)
 
+        # Run all algorithms and get results
         sjf_process_info, sjf_gantt_chart = self.sjf_algorithm([(p['name'], p['burst'], p['arrival'], p['priority']) for p in self.process_info_data])
         srt_process_info, srt_gantt_chart = self.srt_algorithm([(p['name'], p['burst'], p['arrival'], p['priority']) for p in self.process_info_data])
+        pr_process_info, pr_gantt_chart = self.non_preemptive_priority_algorithm([(p['name'], p['burst'], p['arrival'], p['priority']) for p in self.process_info_data])
 
+        # Display results for all algorithms
         self.display_results(sjf_tree, sjf_process_info)
         self.display_results(srt_tree, srt_process_info)
+        self.display_results(pr_tree, pr_process_info)
 
+        # Display calculations and Gantt charts
         self.display_calculation_results(sjf_tab, sjf_process_info, sjf_gantt_chart, "SJF")
         self.display_calculation_results(srt_tab, srt_process_info, srt_gantt_chart, "SRT")
+        self.display_calculation_results(pr_tab, pr_process_info, pr_gantt_chart, "Priority")
 
     def create_treeview(self, parent):
         """
@@ -395,10 +400,61 @@ class CPUSchedulingSimulator:
 
         return process_info, execution_segments
 
+    def non_preemptive_priority_algorithm(self, process_info):
+        """
+        Non-preemptive Priority scheduling implementation
+        Lower priority number = higher priority
+        Returns: tuple(process_info, execution_segments)
+        """
+        timestamp = 0
+        ready_queue = []
+        gantt_chart = []
+        execution_segments = []
+
+        processes = []
+        for p in process_info:
+            processes.append({
+                'name': p[0],
+                'burst': p[1],
+                'arrival': p[2],
+                'priority': p[3],
+                'completion': 0,
+                'turnaround': 0,
+                'waiting': 0,
+                'segments': []
+            })
+
+        processes.sort(key=lambda x: x['arrival'])
+
+        while len(processes) != 0 or len(ready_queue) != 0:
+            while len(processes) != 0 and processes[0]['arrival'] <= timestamp:
+                ready_queue.append(processes.pop(0))
+
+            if len(ready_queue) != 0:
+                # Sort by priority (lower number = higher priority)
+                ready_queue.sort(key=lambda x: x['priority'])
+                current_process = ready_queue.pop(0)
+                gantt_chart.append(current_process)
+                execution_segments.append((timestamp, timestamp + current_process['burst'], current_process['name']))
+
+                start_time = timestamp
+                timestamp += current_process['burst']
+                finish_time = timestamp
+
+                current_process['completion'] = finish_time
+                current_process['turnaround'] = finish_time - current_process['arrival']
+                current_process['waiting'] = current_process['turnaround'] - current_process['burst']
+            else:
+                timestamp += 1
+
+        for process in gantt_chart:
+            for i, p in enumerate(process_info):
+                if p[0] == process['name']:
+                    process_info[i] = p + (process['completion'], process['turnaround'], process['waiting'])
+
+        return process_info, execution_segments
+
     # TODO: Add more scheduling algorithms here
-    # def non_preemptive_priority_algorithm(self, process_info):
-    #     """Priority scheduling implementation"""
-    #     pass
 
     # def round_robin_algorithm(self, process_info, time_quantum):
     #     """Round Robin implementation"""
