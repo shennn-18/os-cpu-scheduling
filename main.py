@@ -1,3 +1,13 @@
+"""
+CSN6214 Group Assignment - Trimester 2430
+
+Group Members:
+1. Chan Jun Kit
+2. Khan Shayan
+3. Eric Kee Ming Shen
+
+"""
+
 #-------------------------------------------------------------------------------------
 # IMPORTS
 from tkinter import *
