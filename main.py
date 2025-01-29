@@ -17,7 +17,7 @@ class CPUSchedulingSimulator:
         self.root = root
         self.root.title("CPU Scheduling Algorithm Simulator - OS")
         self.root.geometry("1000x600")
-        self.process_info_data = []
+        self.process_info_data = [] 
 
         self.setup_ui()
 
@@ -42,7 +42,7 @@ class CPUSchedulingSimulator:
         entries_frame = LabelFrame(scrollable_frame, text="Entries Frame", padx=50, pady=50)
         entries_frame.grid()
 
-        num_process_label = Label(entries_frame, text="Number of Processes:   ")
+        num_process_label = Label(entries_frame, text="Number of Processes (3-10):   ")
         self.num_process_entry = Entry(entries_frame, width=25, borderwidth=5)
         submit_button = Button(entries_frame, text="Submit", command=self.submit_button_fun)
         run_algorithm_button = Button(entries_frame, text="Run Algorithm", command=self.run_algorithm_fun)
@@ -176,9 +176,9 @@ class CPUSchedulingSimulator:
         pr_tab = Frame(tabControl)
         rr_tab = Frame(tabControl)
 
-        tabControl.add(sjf_tab, text="SJF Algorithm", padding=20)
+        tabControl.add(sjf_tab, text="SJN Algorithm", padding=20)
         tabControl.add(srt_tab, text="SRT Algorithm", padding=20)
-        tabControl.add(pr_tab, text="Priority Algorithm", padding=20)
+        tabControl.add(pr_tab, text="Non-Preemptive Priority Algorithm", padding=20)
         tabControl.add(rr_tab, text="Round Robin Algorithm", padding=20)
         tabControl.pack(expand=1, fill="both")
 
@@ -451,7 +451,7 @@ class CPUSchedulingSimulator:
 
     def round_robin_algorithm(self, process_info):
         """
-        Round Robin implementation with fixed time quantum = 3
+        Round Robin implementation with fixed time quantum = 3 (As stated explicitly in the Assignment document)
         Includes priority handling for processes with same arrival time
         """
         TIME_QUANTUM = 3
