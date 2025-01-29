@@ -276,6 +276,7 @@ class CPUSchedulingSimulator:
     def sjf_algorithm(self, process_info):
         """
         Shortest Job First (Non-preemptive) implementation
+        - Added FCFS handling for equal burst times
         Returns: tuple(process_info, execution_segments)
         """
         timestamp = 0
@@ -296,6 +297,7 @@ class CPUSchedulingSimulator:
                 'segments': []
             })
 
+        # Initial sort by arrival time
         processes.sort(key=lambda x: x['arrival'])
 
         while len(processes) != 0 or len(ready_queue) != 0:
@@ -303,17 +305,15 @@ class CPUSchedulingSimulator:
                 ready_queue.append(processes.pop(0))
 
             if len(ready_queue) != 0:
-                ready_queue.sort(key=lambda x: x['burst'])
+                # MODIFIED: Sort by burst time first, then by arrival time for FCFS when burst times are equal
+                ready_queue.sort(key=lambda x: (x['burst'], x['arrival']))
                 current_process = ready_queue.pop(0)
                 gantt_chart.append(current_process)
                 execution_segments.append((timestamp, timestamp + current_process['burst'], current_process['name']))
 
-                start_time = timestamp
                 timestamp += current_process['burst']
-                finish_time = timestamp
-
-                current_process['completion'] = finish_time
-                current_process['turnaround'] = finish_time - current_process['arrival']
+                current_process['completion'] = timestamp
+                current_process['turnaround'] = timestamp - current_process['arrival']
                 current_process['waiting'] = current_process['turnaround'] - current_process['burst']
             else:
                 timestamp += 1
@@ -328,6 +328,7 @@ class CPUSchedulingSimulator:
     def srt_algorithm(self, process_info):
         """
         Shortest Remaining Time (Preemptive) implementation
+        - Added FCFS handling for equal burst times
         Returns: tuple(process_info, execution_segments)
         """
         timestamp = 0
@@ -357,8 +358,10 @@ class CPUSchedulingSimulator:
                 ready_queue.append(processes.pop(0))
 
             if ready_queue:
-                ready_queue.sort(key=lambda x: x['burst'])
+                # MODIFIED: Sort by remaining burst time first, then by arrival time for FCFS when burst times are equal
+                ready_queue.sort(key=lambda x: (x['burst'], x['arrival']))
                 current_process = ready_queue[0]
+                
                 if current_process['burst'] == 0:
                     current_process['completion'] = timestamp
                     current_process['turnaround'] = timestamp - current_process['arrival']
@@ -387,7 +390,7 @@ class CPUSchedulingSimulator:
             for i, p in enumerate(process_info):
                 if p[0] == process['name']:
                     segments = [(start, end if end is not None else timestamp) for start, end in process['segments']]
-                    process_info[i] = p + (process['completion'], process['turnaround'], process['waiting'], segments)
+                    process_info[i] = p + (process['completion'], process['turnaround'], process['waiting'])
                     execution_segments.extend([(start, end, process['name']) for start, end in segments])
 
         return process_info, execution_segments
@@ -395,7 +398,8 @@ class CPUSchedulingSimulator:
     def non_preemptive_priority_algorithm(self, process_info):
         """
         Non-preemptive Priority scheduling implementation
-        Lower priority number = higher priority
+        - Modified to ensure lower priority number = higher priority
+        - Added FCFS handling for equal priorities
         Returns: tuple(process_info, execution_segments)
         """
         timestamp = 0
@@ -409,13 +413,14 @@ class CPUSchedulingSimulator:
                 'name': p[0],
                 'burst': p[1],
                 'arrival': p[2],
-                'priority': p[3],
+                'priority': p[3],  # Lower number = higher priority
                 'completion': 0,
                 'turnaround': 0,
                 'waiting': 0,
                 'segments': []
             })
 
+        # Initial sort by arrival time
         processes.sort(key=lambda x: x['arrival'])
 
         while len(processes) != 0 or len(ready_queue) != 0:
@@ -423,18 +428,16 @@ class CPUSchedulingSimulator:
                 ready_queue.append(processes.pop(0))
 
             if len(ready_queue) != 0:
-                # Sort by priority (lower number = higher priority)
-                ready_queue.sort(key=lambda x: x['priority'])
+                # MODIFIED: Sort by priority first (lower = higher priority), 
+                # then by arrival time for FCFS when priorities are equal
+                ready_queue.sort(key=lambda x: (x['priority'], x['arrival']))
                 current_process = ready_queue.pop(0)
                 gantt_chart.append(current_process)
                 execution_segments.append((timestamp, timestamp + current_process['burst'], current_process['name']))
 
-                start_time = timestamp
                 timestamp += current_process['burst']
-                finish_time = timestamp
-
-                current_process['completion'] = finish_time
-                current_process['turnaround'] = finish_time - current_process['arrival']
+                current_process['completion'] = timestamp
+                current_process['turnaround'] = timestamp - current_process['arrival']
                 current_process['waiting'] = current_process['turnaround'] - current_process['burst']
             else:
                 timestamp += 1
