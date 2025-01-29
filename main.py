@@ -449,6 +449,7 @@ class CPUSchedulingSimulator:
     def round_robin_algorithm(self, process_info):
         """
         Round Robin implementation with fixed time quantum = 3
+        Includes priority handling for processes with same arrival time
         """
         TIME_QUANTUM = 3
         timestamp = 0
@@ -470,13 +471,21 @@ class CPUSchedulingSimulator:
                 'waiting': 0
             })
 
-        # Sort by arrival time initially
-        processes.sort(key=lambda x: x['arrival'])
+        # Sort by arrival time and then by priority for same arrival times
+        processes.sort(key=lambda x: (x['arrival'], x['priority']))
 
         while processes or ready_queue:
             # Check for newly arrived processes
             while processes and processes[0]['arrival'] <= timestamp:
                 ready_queue.append(processes.pop(0))
+                # Sort ready queue by priority if multiple processes arrived at the same time
+                if processes and processes[0]['arrival'] == ready_queue[-1]['arrival']:
+                    continue  # Continue collecting all processes with same arrival time
+                if len(ready_queue) > 1:
+                    # Sort the processes that arrived at the same time by priority
+                    same_arrival_processes = [p for p in ready_queue if p['arrival'] == ready_queue[0]['arrival']]
+                    if len(same_arrival_processes) > 1:
+                        ready_queue.sort(key=lambda x: x['priority'])
 
             if not ready_queue:
                 # If no process is ready, jump to next process arrival
@@ -503,6 +512,13 @@ class CPUSchedulingSimulator:
             # Check for processes that arrived during execution
             while processes and processes[0]['arrival'] <= timestamp:
                 ready_queue.append(processes.pop(0))
+                # Sort by priority if multiple processes arrived at the same time
+                if processes and processes[0]['arrival'] == ready_queue[-1]['arrival']:
+                    continue
+                if len(ready_queue) > 1:
+                    same_arrival_processes = [p for p in ready_queue if p['arrival'] == ready_queue[0]['arrival']]
+                    if len(same_arrival_processes) > 1:
+                        ready_queue.sort(key=lambda x: x['priority'])
 
             # Handle current process
             if current_process['burst'] > 0:
